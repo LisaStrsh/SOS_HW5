@@ -1,0 +1,37 @@
+Проверка ДЗ №5 — 2026-11-25
+
+1. Локальные unit-тесты:
+   .venv/bin/python -m pytest -q tests/test_unit.py
+   Результат: 10 passed in 4.68s.
+
+2. Полный набор в Docker (unit + integration):
+   docker compose --profile test run --build --rm tests
+   Результат: 16 passed, 2 warnings in 3.69s.
+
+3. Отказ одного брокера:
+   ./scripts/test-failover.sh
+   kafka-1 остановлен; тесты выполнялись с --no-deps на оставшихся брокерах.
+   Результат: 16 passed, 2 warnings in 2.62s.
+   kafka-1 затем восстановлен. Все постоянно работающие сервисы healthy.
+   init завершился с кодом 0.
+
+4. Подтверждены:
+   - topic: 3 partitions, replication factor >= 2, min ISR=1;
+   - Schema Registry: Avro, subject movie-events-value, version 1;
+   - валидация HTTP, Avro round-trip, генератор, ключ user_id и ожидание ack;
+   - HTTP producer -> Kafka -> ClickHouse со всеми полями;
+   - дедупликация по event_id;
+   - тестовая когорта: DAU=2, average=1800, conversion=0.5,
+     D1=0.5, D7=0.5, Day0=1, Day2–6=0;
+   - идемпотентный пересчёт в ClickHouse/PostgreSQL;
+   - запись и повторная перезапись полного JSON в S3;
+   - provisioning Grafana и успешное выполнение запросов всех пяти панелей;
+   - автоматические плановые расчёты и экспорт (по логам aggregation).
+
+Предупреждения относятся к datetime.utcnow() внутри botocore на Python 3.12.
+Ошибок тестов нет. Визуальная проверка через браузер не выполнена:
+сервис управления браузером недоступен; Grafana проверена через HTTP API.
+
+Пример материализованной демонстрационной когорты 2026-11-17:
+cohort_size=12; Day0=1; Day1=0.5; Day2=0.5; Day3=0.75;
+Day4=0.6667; Day5=0.6667; Day6=0.75; Day7=0.6667.

@@ -1,0 +1,237 @@
+{
+  "uid": "movie-analytics",
+  "title": "Online Cinema · Analytics",
+  "schemaVersion": 40,
+  "version": 1,
+  "timezone": "utc",
+  "refresh": "30s",
+  "time": {
+    "from": "now-14d",
+    "to": "now"
+  },
+  "tags": [
+    "cinema",
+    "homework-5"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Retention Cohort Heatmap · Day 0–7",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 10
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sql",
+          "editorType": "sql",
+          "rawSql": "SELECT cohort_date AS Cohort,\nmaxIf(retention * 100, day = 0) AS `Day 0`,\nmaxIf(retention * 100, day = 1) AS `Day 1`,\nmaxIf(retention * 100, day = 2) AS `Day 2`,\nmaxIf(retention * 100, day = 3) AS `Day 3`,\nmaxIf(retention * 100, day = 4) AS `Day 4`,\nmaxIf(retention * 100, day = 5) AS `Day 5`,\nmaxIf(retention * 100, day = 6) AS `Day 6`,\nmaxIf(retention * 100, day = 7) AS `Day 7`\nFROM cinema.retention_cohorts FINAL\nWHERE cohort_date >= toDate(now('UTC')) - INTERVAL 30 DAY\nGROUP BY cohort_date ORDER BY cohort_date\n",
+          "format": 1
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "color": {
+            "mode": "continuous-RdYlGr"
+          },
+          "custom": {
+            "align": "center",
+            "cellOptions": {
+              "type": "color-background",
+              "mode": "basic"
+            },
+            "width": 110
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Cohort"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "auto"
+                }
+              },
+              {
+                "id": "custom.width",
+                "value": 160
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "md",
+        "footer": {
+          "show": false
+        }
+      },
+      "description": "Когорта — дата первого VIEW_STARTED. Возврат — событие просмотра. Незавершённые дни и пустые когорты отображаются пустыми. Значения 0–100%."
+    },
+    {
+      "id": 2,
+      "title": "DAU",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sql",
+          "editorType": "sql",
+          "rawSql": "SELECT toDateTime(date, 'UTC') AS time, value FROM cinema.daily_metrics FINAL WHERE metric_name = 'dau' AND dimension = '' AND $__timeFilter(toDateTime(date, 'UTC')) ORDER BY time",
+          "format": 0
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Конверсия завершений / начал",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sql",
+          "editorType": "sql",
+          "rawSql": "SELECT toDateTime(date, 'UTC') AS time, value FROM cinema.daily_metrics FINAL WHERE metric_name = 'conversion' AND dimension = '' AND $__timeFilter(toDateTime(date, 'UTC')) ORDER BY time",
+          "format": 0
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Среднее время завершённого просмотра",
+      "type": "timeseries",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sql",
+          "editorType": "sql",
+          "rawSql": "SELECT toDateTime(date, 'UTC') AS time, value FROM cinema.daily_metrics FINAL WHERE metric_name = 'avg_watch_seconds' AND dimension = '' AND $__timeFilter(toDateTime(date, 'UTC')) ORDER BY time",
+          "format": 0
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Топ фильмов за период",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-clickhouse-datasource",
+        "uid": "clickhouse"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "queryType": "sql",
+          "editorType": "sql",
+          "rawSql": "SELECT dimension AS movie, sum(value) AS views FROM cinema.daily_metrics FINAL WHERE metric_name = 'movie_views' AND $__timeFilter(toDateTime(date, 'UTC')) GROUP BY dimension ORDER BY views DESC, movie LIMIT 10",
+          "format": 1
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true
+      }
+    }
+  ],
+  "annotations": {
+    "list": []
+  }
+}
